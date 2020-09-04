@@ -2,6 +2,10 @@
 const express = require("express");
 const logger = require("morgan");
 const fs = require("fs");
+const path = require("path");
+const process = require("process");
+const { v4: uuidv4 } = require("uuid");
+
 
 //npm modules
 const app = express();
@@ -11,7 +15,7 @@ const PORT = 8080;
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(logger("dev"));
-
+app.use(express.static("public"))
 
 
 // * The application frontend has already been created, it's your job to build the backend and connect the two.
@@ -24,49 +28,66 @@ app.get("/api/notes", function(req, res) {
     res.sendFile(path.join(__dirname, "/public/notes.html"));
     fs.readFile(__dirname + "/db/db.json", "utf8", function(err, data) {
         if (err) throw err;
-
-        console.log(data)
     });
+});
+
+//   * GET `*` - Should return the `index.html` file
+app.get("*", function(req, res) {
+    res.sendFile(path.join(__dirname, "/public/index.html"));
 });
 
 //   * POST `/api/notes` - Should receive a new note to save on the request body, add it to the `db.json` file, and then return the new note to the client.
 app.post("/api/notes", function(req, res) {
-    console.log(req.body)
-    const note = {
-        id: 1234,
+    const note = [{
+        id: uuidv4(),
         ...req.body,
-    };
-    console.log(note)
-    let notes = JSON.stringify(note);
+    }];
+    // console.log(req.body)
+    // console.log(note)
 
-    // fs.readFile(__dirname + "/db/db.json", function(err, data) {
-    // console.log(data)
-    // if (err) throw err;
-    //read from my db.json file
-    // const notes = JSON.parse(data);
-    // console.log(notes)
-    // console.log(notes);
-    //parse JSON
-    // res.json(JSON.parse(data))
-    //     //stringify the data
-    // const stringifiedData = JSON.stringify(notes, null, 2)
-    //     //write to db.json
-    fs.appendFile(__dirname + "/db/db.json", notes, function() {
-        res.json(notes);
 
-        // });
+    fs.readFile(__dirname + "/db/db.json", function(err, data) {
+        //read the data from db.json
+        //parse json
+        console.log(data)
+        const notes = JSON.parse(data);
+        console.log(notes);
+        note.push(notes);
+        // console.log(notes);
+        //stringify the data
+        const stringifiedData = JSON.stringify(note, null, 2);
+        console.log(stringifiedData)
 
-        //thought... it can be write file if i am first reading the info as a whole, THEN pushing new stuff into it... this does overwrite but says the data that's already there is being read, nothing is lost
+
+
+        fs.writeFile(__dirname + "/db/db.json", stringifiedData, function() {
+            // res.json(note);
+        })
+
 
 
 
     })
 })
 
-//   * GET `*` - Should return the `index.html` file
-app.get("*", function(req, res) {
-    res.sendFile(path.join(__dirname, "/public/index.html"));
-});
+
+
+// fs.readFile(__dirname + "/db/db.json", function(err, data) {
+// console.log(data)
+// if (err) throw err;
+//read from my db.json file
+// const notes = JSON.parse(data);
+// console.log(notes)
+// console.log(notes);
+//parse JSON
+// res.json(JSON.parse(data))
+//     //stringify the data
+// const stringifiedData = JSON.stringify(notes, null, 2)
+//     //write to db.json
+// });
+
+//thought... it can be write file if i am first reading the info as a whole, THEN pushing new stuff into it... this does overwrite but since the data that's already there is being read and added, nothing is lost
+
 
 
 // * The application should have a `db.json` file on the backend that will be used to store and retrieve notes using the `fs` module.
@@ -74,6 +95,8 @@ app.get("*", function(req, res) {
 
 
 //   * DELETE `/api/notes/:id` - Should receive a query parameter containing the id of a note to delete. This means you'll need to find a way to give each note a unique `id` when it's saved. In order to delete a note, you'll need to read all notes from the `db.json` file, remove the note with the given `id` property, and then rewrite the notes to the `db.json` file.
+
+
 
 app.listen(PORT, () =>
     console.log(`App listening at http://localhost:${PORT}`)
